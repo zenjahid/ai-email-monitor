@@ -4,8 +4,7 @@ An intelligent email monitoring system that reads incoming emails, uses AI to de
 
 **Built for TQTech — Software Engineer 2 (AI Automation Engineer) Assignment**
 
-> **🔗 Live Demo:** [`https://ai-email-monitor.onrender.com`](https://ai-email-monitor.onrender.com) _(deploy your own instance and replace this link)_
-
+> **🔗 Live Demo:** [`https://ai-email-monitor.onrender.com`](https://ai-email-monitor.onrender.com) 
 ---
 
 ## ✨ Features
