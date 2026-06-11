@@ -1,0 +1,754 @@
+{% extends "base.html" %} {% block title %}Dashboard — AI Email Monitor{%
+endblock %} {% block content %} {# ── Metrics
+────────────────────────────────────────────────── #}
+<div class="metrics" id="stats-bar">
+  <div class="metric blue clickable" data-filter="all" id="filter-all">
+    <div class="label">All</div>
+    <div class="value"><span class="stat-num" id="stat-total">0</span></div>
+  </div>
+  <div
+    class="metric green clickable"
+    data-filter="important"
+    id="filter-important"
+  >
+    <div class="label">Important</div>
+    <div class="value"><span class="stat-num" id="stat-important">0</span></div>
+  </div>
+  <div class="metric gray clickable" data-filter="ignored" id="filter-ignored">
+    <div class="label">Ignored</div>
+    <div class="value"><span class="stat-num" id="stat-ignored">0</span></div>
+  </div>
+  <div
+    class="metric blue clickable"
+    data-filter="remaining"
+    id="filter-remaining"
+  >
+    <div class="label">Remaining</div>
+    <div class="value">
+      <span class="stat-num" id="stat-remaining">...</span>
+    </div>
+  </div>
+  <div class="metric-updated" id="last-updated">updating...</div>
+</div>
+
+{# ── Activity Timeline ──────────────────────────────────────── #}
+<div class="timeline" id="timeline-widget">
+  <div class="head">
+    <span class="lbl">Activity</span>
+    <button
+      class="clear-btn"
+      onclick="clearTimeline()"
+      title="Clear activity log"
+    >
+      Clear
+    </button>
+  </div>
+  <div class="timeline-list" id="timeline-list">
+    <div class="timeline-item">
+      <span class="time">—</span><span>Loading...</span>
+    </div>
+  </div>
+</div>
+
+{# ── Progress ───────────────────────────────────────────────── #}
+<div class="progress-box" id="progress-container">
+  <div class="head">
+    <span class="lbl">Processing Progress</span>
+    <span class="pct" id="progress-pct">0%</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+  <div class="info">
+    <span id="progress-text">0 / 0 processed</span>
+  </div>
+</div>
+
+{# ── Actions ────────────────────────────────────────────────── #}
+<div class="btn-group mb-24" id="action-bar">
+  <button class="btn btn-danger btn-sm" onclick="clearAllData()">
+    Delete All Data
+  </button>
+  <button
+    class="btn btn-outline btn-sm"
+    id="delete-remaining-btn"
+    onclick="deleteAllRemaining()"
+    style="display: none"
+  >
+    Delete All Remaining
+  </button>
+</div>
+
+{# ── Search Bar ─────────────────────────────────────────────── #}
+<div class="search-bar">
+  <input
+    type="text"
+    id="search-input"
+    placeholder="Search by subject, sender, or category..."
+    oninput="onSearchInput(this.value)"
+  />
+  <svg
+    class="search-icon"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+</div>
+
+{# ── Batch Action Bar ───────────────────────────────────────── #}
+<div class="batch-bar" id="batch-bar">
+  <span><span class="count" id="batch-count">0</span> selected</span>
+  <button
+    class="btn btn-danger btn-sm"
+    id="batch-delete-btn"
+    onclick="batchDelete()"
+  >
+    Delete Selected
+  </button>
+</div>
+
+{# ── Emails list ───────────────────────────────────────────── #}
+<div id="emails-list">
+  <div class="empty-state">
+    <div class="icon">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+        <polyline points="2,4 12,13 22,4" />
+      </svg>
+    </div>
+    <h3>No emails processed yet</h3>
+    <p>
+      Waiting for the next poll cycle. New emails will appear here
+      automatically.
+    </p>
+  </div>
+</div>
+
+{# ── Pagination ─────────────────────────────────────────────── #}
+<div class="pagination" id="pagination"></div>
+
+{% endblock %} {% block scripts %}
+<script>
+  // ── State ───────────────────────────────────────────────────
+  let currentFilter = "all";
+  let allEmails = [];
+  let remainingEmails = [];
+  let searchQuery = "";
+  let selectedIds = new Set();
+  let currentPage = 1;
+  const PAGE_SIZE = 25;
+
+  // ── Helpers ─────────────────────────────────────────────────
+  function escapeHtml(text) {
+    if (!text) return "";
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function timeAgo(isoStr) {
+    if (!isoStr) return "unknown";
+    const then = new Date(isoStr.endsWith("Z") ? isoStr : isoStr + "Z");
+    const now = new Date();
+    const diffSec = Math.floor((now - then) / 1000);
+    if (diffSec < 60) return "just now";
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return diffMin + "m ago";
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return diffHr + "h ago";
+    return then.toLocaleDateString();
+  }
+
+  function badgeClass(priority) {
+    const p = (priority || "").toLowerCase();
+    if (p === "high") return "badge-high";
+    if (p === "medium") return "badge-medium";
+    return "badge-low";
+  }
+
+  function filterEmails(filter, emails) {
+    if (filter === "important")
+      return emails.filter((e) => e.important === 1 || e.important === true);
+    if (filter === "ignored")
+      return emails.filter((e) => e.important === 0 || e.important === false);
+    return emails;
+  }
+
+  function matchesSearch(email, query) {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return (
+      (email.subject || "").toLowerCase().includes(q) ||
+      (email.sender || "").toLowerCase().includes(q) ||
+      (email.category || "").toLowerCase().includes(q) ||
+      (email.from || "").toLowerCase().includes(q)
+    );
+  }
+
+  // ── Stat counter animation ─────────────────────────────────
+  function animateStat(el) {
+    if (!el) return;
+    el.classList.remove("flash");
+    void el.offsetWidth; // force reflow
+    el.classList.add("flash");
+  }
+
+  // ── Batch selection ─────────────────────────────────────────
+  function toggleSelect(emailId) {
+    if (selectedIds.has(emailId)) {
+      selectedIds.delete(emailId);
+    } else {
+      selectedIds.add(emailId);
+    }
+    updateBatchBar();
+    // Highlight selected cards
+    document.querySelectorAll(".card").forEach((card) => {
+      const id = card.dataset.emailId;
+      card.classList.toggle("selected", selectedIds.has(id));
+      const cb = card.querySelector(".card-checkbox");
+      if (cb) cb.checked = selectedIds.has(id);
+    });
+  }
+
+  function updateBatchBar() {
+    const bar = document.getElementById("batch-bar");
+    const count = document.getElementById("batch-count");
+    count.textContent = selectedIds.size;
+    bar.classList.toggle("show", selectedIds.size > 0);
+  }
+
+  async function batchDelete() {
+    if (selectedIds.size === 0) return;
+    if (!confirm("Delete " + selectedIds.size + " selected email(s)?")) return;
+    const ids = Array.from(selectedIds);
+    let deleted = 0;
+    for (const id of ids) {
+      try {
+        // Try processed first, then remaining
+        const res = await fetch("/api/processed/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email_id: id }),
+        });
+        if (res.ok) {
+          deleted++;
+        } else {
+          // Try remaining
+          const res2 = await fetch("/api/mock-data/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email_id: id }),
+          });
+          if (res2.ok) deleted++;
+        }
+      } catch (e) {
+        console.error("Batch delete error:", e);
+      }
+    }
+    selectedIds.clear();
+    updateBatchBar();
+    showToast("Deleted " + deleted + " email(s).", "success");
+    fetchAndUpdate();
+    fetchRemaining();
+  }
+
+  // ── Search ──────────────────────────────────────────────────
+  function onSearchInput(value) {
+    searchQuery = value.trim();
+    currentPage = 1;
+    renderEmails(allEmails, currentFilter);
+  }
+
+  // ── Pagination ──────────────────────────────────────────────
+  function renderPagination(totalItems, container) {
+    const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+    if (totalPages <= 1) {
+      container.innerHTML = "";
+      return;
+    }
+    let html = "";
+    // Prev
+    html +=
+      '<button onclick="goPage(' +
+      (currentPage - 1) +
+      ')" ' +
+      (currentPage <= 1 ? "disabled" : "") +
+      ">‹ Prev</button>";
+    // Pages
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === currentPage) {
+        html += '<button class="active">' + i + "</button>";
+      } else if (
+        i === 1 ||
+        i === totalPages ||
+        Math.abs(i - currentPage) <= 2
+      ) {
+        html += '<button onclick="goPage(' + i + ')">' + i + "</button>";
+      } else if (i === currentPage - 3 || i === currentPage + 3) {
+        html += "<button disabled>…</button>";
+      }
+    }
+    // Next
+    html +=
+      '<button onclick="goPage(' +
+      (currentPage + 1) +
+      ')" ' +
+      (currentPage >= totalPages ? "disabled" : "") +
+      ">Next ›</button>";
+    container.innerHTML = html;
+  }
+
+  function goPage(page) {
+    currentPage = page;
+    renderEmails(allEmails, currentFilter);
+  }
+
+  // ── Delete ALL processed data ─────────────────────────────
+  async function clearAllData() {
+    if (!confirm("Delete ALL processed email records from the database?"))
+      return;
+    try {
+      const res = await fetch("/api/mock-data/clear", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(
+          "All data cleared (" + data.deleted + " rows deleted).",
+          "success",
+        );
+        fetchAndUpdate();
+      } else {
+        showToast(data.error || "Failed to clear data", "error");
+      }
+    } catch (err) {
+      showToast("Network error", "error");
+      console.error(err);
+    }
+  }
+
+  // ── Delete ALL remaining (unprocessed) mock emails ─────────
+  async function deleteAllRemaining() {
+    if (
+      !confirm(
+        "Delete ALL unprocessed emails from the mock dataset? This cannot be undone.",
+      )
+    )
+      return;
+    try {
+      const res = await fetch("/api/mock-data/delete-unprocessed", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(
+          "Remaining emails deleted (" + data.deleted + " removed).",
+          "success",
+        );
+        fetchRemaining();
+        fetchAndUpdate();
+      } else {
+        showToast(data.error || "Failed to delete remaining", "error");
+      }
+    } catch (err) {
+      showToast("Network error", "error");
+      console.error(err);
+    }
+  }
+
+  // ── Delete a single remaining (unprocessed) mock email ─────
+  async function deleteRemainingEmail(emailId) {
+    if (!confirm("Delete this unprocessed email from the mock dataset?"))
+      return;
+    try {
+      const res = await fetch("/api/mock-data/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email_id: emailId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast("Email deleted.", "success");
+        fetchRemaining();
+        fetchAndUpdate();
+      } else {
+        showToast(data.error || "Failed to delete", "error");
+      }
+    } catch (err) {
+      showToast("Network error", "error");
+      console.error(err);
+    }
+  }
+
+  // ── Delete an email from processed DB ───────────────────────
+  async function deleteProcessedEmail(emailId) {
+    if (!confirm("Remove this email from the processed database?")) return;
+    try {
+      const res = await fetch("/api/processed/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email_id: emailId }),
+      });
+      if (res.ok) {
+        showToast("Email removed from database.", "success");
+        // Remove from selection if present
+        selectedIds.delete(emailId);
+        updateBatchBar();
+        fetchAndUpdate();
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Failed to delete", "error");
+      }
+    } catch (err) {
+      showToast("Network error", "error");
+      console.error(err);
+    }
+  }
+
+  // ── Delete an email from mock data (settings-style) ────────
+  async function deleteMockEmail(emailId) {
+    if (!confirm("Delete this email from the mock dataset?")) return;
+    try {
+      const res = await fetch("/api/mock-data/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email_id: emailId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast("Email deleted. Reloading...", "success");
+        fetchAndUpdate();
+      } else {
+        showToast(data.error || "Failed to delete email", "error");
+      }
+    } catch (err) {
+      showToast("Network error", "error");
+      console.error(err);
+    }
+  }
+
+  // ── Render emails ───────────────────────────────────────────
+  function renderEmails(emails, filter) {
+    const container = document.getElementById("emails-list");
+    const paginationContainer = document.getElementById("pagination");
+
+    // If "remaining" filter, render unprocessed mock emails
+    if (filter === "remaining") {
+      document.getElementById("delete-remaining-btn").style.display =
+        remainingEmails.length > 0 ? "inline-flex" : "none";
+      if (!remainingEmails || remainingEmails.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+                <polyline points="2,4 12,13 22,4"/>
+              </svg>
+            </div>
+            <h3>All emails processed</h3>
+            <p>No unprocessed emails remaining in the mock dataset.</p>
+          </div>
+        `;
+        paginationContainer.innerHTML = "";
+        return;
+      }
+
+      // Filter by search
+      let items = remainingEmails;
+      if (searchQuery) {
+        items = items.filter((item) => matchesSearch(item, searchQuery));
+      }
+
+      // Paginate
+      const totalItems = items.length;
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const pageItems = items.slice(start, start + PAGE_SIZE);
+
+      let html = "";
+      for (const item of pageItems) {
+        const isSelected = selectedIds.has(item.id || "");
+        html += `
+          <div class="card mock-card ${isSelected ? "selected" : ""}" data-email-id="${escapeHtml(item.id || "")}">
+            <div class="card-bar"></div>
+            <input type="checkbox" class="card-checkbox" ${isSelected ? "checked" : ""} onchange="toggleSelect('${escapeHtml(item.id || "")}')" />
+            <button class="card-del" onclick="event.stopPropagation();deleteRemainingEmail('${escapeHtml(item.id || "")}')">Delete</button>
+            <div class="card-head">
+              <span class="badge badge-low">UNPROCESSED</span>
+              <span class="card-sender hover-preview" data-preview="${escapeHtml(item.body ? item.body.substring(0, 100) : "")}">${escapeHtml(item.from || "unknown")}</span>
+            </div>
+            <div class="card-subject">${escapeHtml(item.subject || "(no subject)")}</div>
+            <div class="card-meta">
+              <span class="tag">${escapeHtml(item.category || "GENERAL")}</span>
+            </div>
+            <div class="card-body hover-preview" data-preview="${escapeHtml(item.body ? item.body.substring(0, 150) + (item.body.length > 150 ? "…" : "") : "")}">${escapeHtml(item.body || "")}</div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+      renderPagination(totalItems, paginationContainer);
+
+      // Click to expand body
+      container.querySelectorAll(".card").forEach((card) => {
+        card.addEventListener("click", (e) => {
+          if (
+            e.target.closest("a") ||
+            e.target.closest(".card-del") ||
+            e.target.closest(".card-checkbox")
+          )
+            return;
+          const body = card.querySelector(".card-body");
+          if (body) body.classList.toggle("show");
+        });
+      });
+      return;
+    }
+
+    // Hide "Delete All Remaining" when not on remaining filter
+    document.getElementById("delete-remaining-btn").style.display = "none";
+
+    // Normal processed-email rendering
+    const filtered = filterEmails(filter, emails);
+
+    // Apply search
+    let displayList = filtered;
+    if (searchQuery) {
+      displayList = filtered.filter((e) => matchesSearch(e, searchQuery));
+    }
+
+    if (!displayList || displayList.length === 0) {
+      const msg =
+        filter !== "all"
+          ? "No emails match this filter."
+          : "No emails processed yet. Waiting for the next poll cycle...";
+      const title = filter !== "all" ? "No results" : "No emails processed yet";
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+              <polyline points="2,4 12,13 22,4"/>
+            </svg>
+          </div>
+          <h3>${title}</h3>
+          <p>${msg}</p>
+        </div>
+      `;
+      paginationContainer.innerHTML = "";
+      return;
+    }
+
+    // Paginate
+    const totalItems = displayList.length;
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageItems = displayList.slice(start, start + PAGE_SIZE);
+
+    let html = "";
+    for (const n of pageItems) {
+      const isImportant = n.important === 1 || n.important === true;
+      const isSelected = selectedIds.has(n.email_id || "");
+      const bodyPreview = n.body
+        ? n.body.substring(0, 150) + (n.body.length > 150 ? "…" : "")
+        : "";
+      html += `
+        <div class="card ${isSelected ? "selected" : ""}" data-email-id="${escapeHtml(n.email_id || "")}">
+          <div class="card-bar ${isImportant ? "imp" : ""}"></div>
+          <input type="checkbox" class="card-checkbox" ${isSelected ? "checked" : ""} onchange="toggleSelect('${escapeHtml(n.email_id || "")}')" />
+          <button class="card-del" onclick="event.stopPropagation();deleteProcessedEmail('${escapeHtml(n.email_id || "")}')">Delete</button>
+          <div class="card-head">
+            <span class="badge ${badgeClass(n.priority)}">${escapeHtml(n.priority || "LOW")}</span>
+            <span class="card-sender hover-preview" data-preview="${escapeHtml(n.sender || "")}">${escapeHtml(n.sender || "unknown")}</span>
+          </div>
+          <div class="card-subject">${escapeHtml(n.subject || "(no subject)")}</div>
+          <div class="card-meta">
+            <span class="tag">${escapeHtml(n.category || "GENERAL")}</span>
+            <span>${timeAgo(n.received_at || n.processed_at)}</span>
+          </div>
+          <div class="card-reason">${escapeHtml(n.reason || "")}</div>
+          <div class="card-body hover-preview" data-preview="${escapeHtml(bodyPreview)}">${escapeHtml(n.body || "")}</div>
+        </div>
+      `;
+    }
+    container.innerHTML = html;
+    renderPagination(totalItems, paginationContainer);
+
+    // ── Click to expand body ──────────────────────────────────
+    container.querySelectorAll(".card").forEach((card) => {
+      card.addEventListener("click", (e) => {
+        if (
+          e.target.closest("a") ||
+          e.target.closest(".card-del") ||
+          e.target.closest(".card-checkbox")
+        )
+          return;
+        const body = card.querySelector(".card-body");
+        if (body) body.classList.toggle("show");
+      });
+    });
+  }
+
+  // ── Render stats ────────────────────────────────────────────
+  function renderStats(stats) {
+    const processed = stats.total || 0;
+    const available = stats.available || 0;
+    const important = stats.important || 0;
+    const ignored = stats.ignored || 0;
+    const remaining = stats.remaining >= 0 ? stats.remaining : "?";
+
+    const allCount = available > 0 ? available : processed;
+
+    const totalEl = document.getElementById("stat-total");
+    const impEl = document.getElementById("stat-important");
+    const ignEl = document.getElementById("stat-ignored");
+    const remEl = document.getElementById("stat-remaining");
+
+    const oldTotal = totalEl.textContent;
+    const oldImp = impEl.textContent;
+    const oldIgn = ignEl.textContent;
+    const oldRem = remEl.textContent;
+
+    totalEl.textContent = allCount;
+    impEl.textContent = important;
+    ignEl.textContent = ignored;
+    remEl.textContent = remaining;
+
+    if (oldTotal !== String(allCount)) animateStat(totalEl);
+    if (oldImp !== String(important)) animateStat(impEl);
+    if (oldIgn !== String(ignored)) animateStat(ignEl);
+    if (oldRem !== String(remaining)) animateStat(remEl);
+
+    // Progress bar
+    const progressContainer = document.getElementById("progress-container");
+    if (available > 0) {
+      progressContainer.classList.remove("hidden");
+      const pct = Math.round((processed / available) * 100);
+      document.getElementById("progress-fill").style.width =
+        Math.min(pct, 100) + "%";
+      document.getElementById("progress-text").textContent =
+        processed + " / " + available + " processed";
+      document.getElementById("progress-pct").textContent = pct + "%";
+    } else {
+      progressContainer.classList.add("hidden");
+    }
+  }
+
+  // ── Render timeline ─────────────────────────────────────────
+  async function fetchTimeline() {
+    try {
+      const res = await fetch("/api/activity?limit=20");
+      if (!res.ok) return;
+      const entries = await res.json();
+      const list = document.getElementById("timeline-list");
+      if (!entries || entries.length === 0) {
+        list.innerHTML =
+          '<div class="timeline-item"><span class="time">—</span><span>No activity yet.</span></div>';
+        return;
+      }
+      let html = "";
+      for (const entry of entries) {
+        const time = entry.created_at ? timeAgo(entry.created_at) : "";
+        html +=
+          '<div class="timeline-item"><span class="time">' +
+          escapeHtml(time) +
+          "</span><span>" +
+          escapeHtml(entry.event + ": " + entry.detail) +
+          "</span></div>";
+      }
+      list.innerHTML = html;
+    } catch (err) {
+      console.error("Failed to fetch timeline:", err);
+    }
+  }
+
+  async function clearTimeline() {
+    if (!confirm("Clear activity log?")) return;
+    try {
+      const res = await fetch("/api/activity/clear", { method: "POST" });
+      if (res.ok) {
+        showToast("Activity log cleared.", "success");
+        fetchTimeline();
+      } else {
+        showToast("Failed to clear activity log.", "error");
+      }
+    } catch (err) {
+      showToast("Network error", "error");
+    }
+  }
+
+  // ── Update filter UI ────────────────────────────────────────
+  function setActiveFilter(filter) {
+    currentFilter = filter;
+    currentPage = 1;
+    selectedIds.clear();
+    updateBatchBar();
+    document
+      .querySelectorAll(".metric.clickable[data-filter]")
+      .forEach((el) => {
+        el.classList.toggle("active", el.dataset.filter === filter);
+      });
+  }
+
+  // ── Fetch remaining (unprocessed) emails ────────────────────
+  async function fetchRemaining() {
+    try {
+      const res = await fetch("/api/emails/unprocessed");
+      if (res.ok) {
+        remainingEmails = await res.json();
+      }
+    } catch (err) {
+      console.error("Failed to fetch remaining emails:", err);
+    }
+  }
+
+  // ── Fetch & update ──────────────────────────────────────────
+  async function fetchAndUpdate() {
+    try {
+      const [emailsRes, statsRes] = await Promise.all([
+        fetch("/api/emails"),
+        fetch("/api/stats"),
+      ]);
+
+      if (emailsRes.ok) {
+        allEmails = await emailsRes.json();
+        renderEmails(allEmails, currentFilter);
+      }
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        renderStats(stats);
+      }
+
+      document.getElementById("last-updated").textContent =
+        "updated " + new Date().toLocaleTimeString();
+    } catch (err) {
+      console.error("Dashboard fetch error:", err);
+    }
+  }
+
+  // ── Stat click handlers (filter) ────────────────────────────
+  document.querySelectorAll(".metric.clickable[data-filter]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const filter = el.dataset.filter;
+      setActiveFilter(filter);
+      renderEmails(allEmails, filter);
+    });
+  });
+
+  // ── Auto-refresh ────────────────────────────────────────────
+  fetchAndUpdate();
+  fetchRemaining();
+  fetchTimeline();
+  setInterval(fetchAndUpdate, 10000);
+  setInterval(fetchRemaining, 10000);
+  setInterval(fetchTimeline, 15000);
+</script>
+{% endblock %}

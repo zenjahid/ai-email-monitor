@@ -1,0 +1,142 @@
+[
+  {
+    "id": "mail-041",
+    "from": "benefits@company.com",
+    "subject": "Reminder: Annual health benefits enrollment deadline is Friday",
+    "body": "Hi everyone,\n\nThis is a final reminder that the enrollment window for next year's health, dental, and vision benefits closes this Friday, June 12th, at 5:00 PM EST.\n\nIf you do not submit your selections by the deadline, your current plan will automatically roll over, but you will miss the opportunity to make adjustments or add dependents. Please complete your enrollment through the HR portal.\n\nBenefits Team",
+    "received_at": "2026-06-10T10:30:00Z"
+  },
+  {
+    "id": "mail-042",
+    "from": "support@saas-tool.com",
+    "subject": "Account cancellation request received",
+    "body": "Hello,\n\nWe have received your request to cancel your 'Pro Plan' subscription for account #ACT-4491.\n\nYour account will remain active with premium features until the end of your current billing cycle on June 28, 2026. After this date, your subscription will be downgraded to our free tier and you will no longer be billed.\n\nIf this was a mistake, you can reverse the cancellation anytime from your subscription settings.\n\nCustomer Support",
+    "received_at": "2026-06-10T10:15:00Z"
+  },
+  {
+    "id": "mail-043",
+    "from": "backups@db-admin.com",
+    "subject": "SUCCESS: Daily database backup completed",
+    "body": "Daily Backup Status Report:\n\n- Job ID: backup-2026-06-10-01\n- Database: prod-main-db\n- Storage Location: AWS S3 (eu-west-1)\n- Archive Size: 412.8 GB\n- Compression Ratio: 4.2:1\n- Duration: 42 minutes, 15 seconds\n\nNo errors or warnings were logged during the backup process.",
+    "received_at": "2026-06-10T10:00:00Z"
+  },
+  {
+    "id": "mail-044",
+    "from": "investments@crypto-gains.net",
+    "subject": "Earn 15% guaranteed weekly returns with automated trading bot",
+    "body": "Dear Investor,\n\nAre you tired of low interest rates at your bank? Our AI-powered trading platform executes thousands of micro-transactions per second in the crypto market, guaranteeing steady passive income.\n\nSign up today with as little as $100 and receive a $50 welcome bonus instantly.\n\nClick here to start earning: https://crypto-gains-scam.net/signup",
+    "received_at": "2026-06-10T09:45:00Z"
+  },
+  {
+    "id": "mail-045",
+    "from": "billing@cloudservices.com",
+    "subject": "Action Required: Upcoming renewal payment reminder",
+    "body": "Hello,\n\nThis is a reminder that your monthly subscription for Cloud Services will automatically renew on June 15, 2026. \n\nWe will attempt to charge the amount of $499.00 to your credit card ending in 4321 on file. Please ensure your billing details are correct to prevent service disruptions.\n\nView invoice details: https://cloudservices.com/billing/inv-90123",
+    "received_at": "2026-06-10T09:30:00Z"
+  },
+  {
+    "id": "mail-046",
+    "from": "calendar-notification@google.com",
+    "subject": "Canceled Event: 1-on-1 with Product Manager @ Wed Jun 10, 2026 2pm",
+    "body": "The following event has been canceled by the organizer:\n\nEvent: 1-on-1 with Product Manager\nOrganizer: kyle.smith@company.com\nDate/Time: June 10, 2026, from 2:00 PM to 2:30 PM UTC\n\nReason given: 'Apologies, a customer escalation just came up. I will reschedule this for later this week.'",
+    "received_at": "2026-06-10T09:12:00Z"
+  },
+  {
+    "id": "mail-047",
+    "from": "no-reply@slack.com",
+    "subject": "Your Slack sign-in verification code",
+    "body": "Hi there,\n\nWe received a request to log in to Slack using your email address on a new device.\n\nYour verification code is: 843-109\n\nThis code is temporary and will expire in 10 minutes. If you did not request this login, please ignore this email or contact support.",
+    "received_at": "2026-06-10T08:55:00Z"
+  },
+  {
+    "id": "mail-048",
+    "from": "intercom@yourplatform.com",
+    "subject": "[Intercom] Conversation assigned to you: 'Unable to export CSV'",
+    "body": "The following customer conversation has been assigned to you:\n\nUser: Sarah Thompson (thompson.s@enterprise.com)\nMessage:\n\"Whenever I click the 'Export to CSV' button on the dashboard report, the page hangs for a minute and then returns a 504 Gateway Timeout error. This is happening for all reports in our account. Please assist.\"\n\nReply to user: https://intercom.io/inbox/conv-829312",
+    "received_at": "2026-06-10T08:35:00Z"
+  },
+  {
+    "id": "mail-049",
+    "from": "alerts@sentry.io",
+    "subject": "[Sentry] [Production] NullReferenceException in /api/v1/payments",
+    "body": "Sentry Alert: New issue detected in production.\n\nIssue ID: PROD-ERR-812\nException: NullReferenceException: Object reference not set to an instance of an object.\nFile: PaymentController.cs, line 143\nUser: ID 88120\n\n- Occurrences: 14 times in the past 15 minutes\n- Release: release-v2.4.1\n\nView on Sentry dashboard: https://sentry.io/org/project/issues/812",
+    "received_at": "2026-06-10T08:18:00Z"
+  },
+  {
+    "id": "mail-050",
+    "from": "domains@networksolutions.com",
+    "subject": "Incoming domain transfer request pending approval",
+    "body": "Dear Domain Owner,\n\nWe received a request to transfer the administrative control of the domain name 'companyportal.net' to another registrar.\n\nTo approve this transfer, no action is required. If you wish to reject or cancel this transfer request, you must click the link below and enter your authorization code within 5 business days.\n\nReject Transfer: https://networksolutions.com/transfer/reject?id=82931",
+    "received_at": "2026-06-10T07:50:00Z"
+  },
+  {
+    "id": "mail-051",
+    "from": "no_reply@email.apple.com",
+    "subject": "Your receipt from Apple: iCloud+ 200 GB Storage Plan",
+    "body": "Thank you for your purchase.\n\nInvoice Date: Jun 10, 2026\nOrder ID: MNL832910\nDocument No: 2026-8910-332\n\nDescription: iCloud+ with 200 GB Storage (Monthly)\nPrice: $2.99\nTax: $0.24\nTotal: $3.23\nCharged to: Visa (ending in 8811)\n\nManage subscriptions: https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/manageSubscriptions",
+    "received_at": "2026-06-10T07:12:00Z"
+  },
+  {
+    "id": "mail-052",
+    "from": "legal@softwarecompany.com",
+    "subject": "Notice of updates to our Privacy Policy and Terms of Service",
+    "body": "Dear User,\n\nWe are updating our Privacy Policy and Terms of Service to better reflect new international data protection regulations and our expanding product features.\n\nKey updates include:\n- Clarification of data handling practices for third-party AI integrations\n- Improved dispute resolution terms\n- Alignment with GDPR and CCPA documentation requirements\n\nThese changes will take effect on July 1, 2026. Continued use of our platform after this date constitutes acceptance of the new terms.",
+    "received_at": "2026-06-10T06:40:00Z"
+  },
+  {
+    "id": "mail-053",
+    "from": "noreply@github.com",
+    "subject": "[GitHub] Pull request #314: Review requested on branch feature/auth-roles",
+    "body": "Repository: org/main-project\nPull Request: #314 (Implement RBAC permissions for admin dashboard)\nAuthor: dev-tommy\n\nYou have been requested to review this pull request before it can be merged into main.\n\n- 12 files changed (+142 lines, -48 lines)\n- CI Status: Passed\n\nReview changes on GitHub: https://github.com/org/main-project/pull/314",
+    "received_at": "2026-06-10T05:50:00Z"
+  },
+  {
+    "id": "mail-054",
+    "from": "no-reply@zoom.us",
+    "subject": "Cloud recording is now available: Q2 Technical All-Hands Meeting",
+    "body": "Hi there,\n\nYour cloud recording of the 'Q2 Technical All-Hands Meeting' held on June 9, 2026, is now available for viewing and sharing.\n\nRecording Link: https://zoom.us/rec/play/7710328190\nPasscode: Zm#8910!\n\nThis recording will be automatically deleted from our cloud storage after 30 days.",
+    "received_at": "2026-06-10T04:20:00Z"
+  },
+  {
+    "id": "mail-055",
+    "from": "travel@escapes-newsletter.com",
+    "subject": "Summer is here: Flight deals to Europe under $400 round-trip",
+    "body": "Ready to travel this summer?\n\nOur deal hunters have found historically low airfares for travel between August and October 2026:\n\n- New York (JFK) to London (LHR): $349 round-trip\n- Los Angeles (LAX) to Rome (FCO): $399 round-trip\n- Chicago (ORD) to Paris (CDG): $380 round-trip\n\nBook within 48 hours to secure these promotional rates.",
+    "received_at": "2026-06-10T03:55:00Z"
+  },
+  {
+    "id": "mail-056",
+    "from": "monitoring@devops-internal.net",
+    "subject": "WARNING: Low disk space on storage server nas-03",
+    "body": "Automated Alert: Storage utilization warning threshold exceeded.\n\n- Host: nas-03.internal.lan\n- Mount Point: /mnt/data-backups\n- Used Space: 18.2 TB / 20.0 TB (91% capacity used)\n- Available Space: 1.8 TB\n\nAction Recommended: Please clean up old debug logs or allocate additional storage volumes to avoid failure on night backups.",
+    "received_at": "2026-06-10T02:40:00Z"
+  },
+  {
+    "id": "mail-057",
+    "from": "feedback@customertasks.com",
+    "subject": "New Feature Request: Support for dark mode in mobile app",
+    "body": "Hi support team,\n\nI really enjoy using your application, but I often access it late at night. The bright white user interface is quite hard on my eyes.\n\nDo you have plans to implement a dark mode setting in the iOS and Android applications anytime soon? That would make the app much better for late-night users like myself.\n\nThanks,\nLaura",
+    "received_at": "2026-06-10T02:10:00Z"
+  },
+  {
+    "id": "mail-058",
+    "from": "culture-committee@company.com",
+    "subject": "Vote now: Summer team-building activity selection",
+    "body": "Hello team!\n\nIt is time to plan our annual summer team-building event. We have narrowed the choices down to three options:\n\n1. Outdoor Go-Karting & BBQ\n2. Private Escape Room & Dinner\n3. Kayaking & Paddleboarding on the river\n\nPlease submit your preference in the quick survey below by Friday so we can finalize bookings.\n\nVote here: https://company-internal-surveys.com/summer-event",
+    "received_at": "2026-06-10T01:30:00Z"
+  },
+  {
+    "id": "mail-059",
+    "from": "security@account-portal.com",
+    "subject": "Two-factor authentication (2FA) has been enabled",
+    "body": "Security Confirmation:\n\nThis is to confirm that two-factor authentication (2FA) via authenticator app (TOTP) has been successfully enabled on your account.\n\nYou will now be prompted to enter a verification code from your device when logging in. Backup codes have been generated for you; please save them in a safe place.\n\nIf you did not make this change, please contact our security team immediately.",
+    "received_at": "2026-06-10T00:45:00Z"
+  },
+  {
+    "id": "mail-060",
+    "from": "receipts@ubereats.com",
+    "subject": "Your order receipt from Tokyo Sushi",
+    "body": "Thanks for ordering through Uber Eats!\n\nOrder Details:\n- Store: Tokyo Sushi\n- Date: June 9, 2026 (08:30 PM)\n\nItems:\n- 1x Salmon Avocado Roll ($12.00)\n- 1x Spicy Tuna Roll ($11.50)\n- 1x Miso Soup ($3.50)\n\nSubtotal: $27.00\nDelivery Fee: $2.49\nService Fee: $3.00\nTip: $5.00\nTotal Charged: $37.49 (Card ending in 1122)\n\nHope you enjoyed your meal!",
+    "received_at": "2026-06-09T21:05:00Z"
+  }
+]

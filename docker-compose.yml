@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  email-agent:
+    build: .
+    container_name: ai-email-monitor
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount data directory so the SQLite DB and any credentials persist
+      - ./data:/data
+      # Mount .env for configuration (optional — you can also set env vars directly)
+      - ./.env:/app/.env:ro
+    environment:
+      - EMAIL_SOURCE=mock
+      - PROVIDER=rule_based
+      - POLL_INTERVAL=120
+      - DATABASE_PATH=/data/emails.db
+    restart: unless-stopped

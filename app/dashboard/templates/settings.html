@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% block title %}Settings — AI Email Monitor{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Settings</h1>
+<p class="page-desc">Configure your email source and AI provider. Changes take effect on the next poll cycle.</p>
+
+<form id="settings-form">
+    {# ── Email Source ────────────────────────────────────────── #}
+    <div class="section-title">Email Source</div>
+
+    <div class="form-group">
+        <label for="email_source">Source Type</label>
+        <select id="email_source" name="email_source">
+            <option value="mock" {{ 'selected' if settings.email_source == 'mock' else '' }}>Mock Data (no real server)</option>
+            <option value="imap" {{ 'selected' if settings.email_source == 'imap' else '' }}>IMAP / Gmail</option>
+        </select>
+    </div>
+
+    {# ── Mock Data Editor ─────────────────────────────────────── #}
+    <div id="mock-editor" class="{{ 'hidden' if settings.email_source != 'mock' else '' }}">
+        <div class="form-group">
+            <label>Mock Emails ({{ mock_emails|length }} total)</label>
+            <div class="mock-list" id="mock-email-list">
+                {% for email in mock_emails %}
+                <div class="mock-item" data-email-id="{{ email.id }}">
+                    <div class="info">
+                        <span class="id">{{ email.id }}</span>
+                        <span class="subj">{{ email.subject }}</span>
+                    </div>
+                    <button type="button" class="del" onclick="deleteMockEmail('{{ email.id }}')" title="Delete this email">&times;</button>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="help">Click the &times; button to remove individual emails, or edit the raw JSON below.</div>
+        </div>
+        <div class="form-group">
+            <label for="mock_data">Raw JSON Data</label>
+            <textarea id="mock_data" name="mock_data" rows="12" style="font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:13px;white-space:pre;overflow:auto;tab-size:2;">{{ mock_json }}</textarea>
+            <div class="help">Edit the JSON array directly and click "Save Mock Data" to apply changes.</div>
+        </div>
+        <button type="button" id="save-mock-btn" class="btn btn-secondary btn-sm">Save Mock Data</button>
+    </div>
+
+    {# ── IMAP Fields ──────────────────────────────────────────── #}
+    <div id="imap-fields" class="{{ 'hidden' if settings.email_source != 'imap' else '' }}">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="imap_host">IMAP Server</label>
+                <input type="text" id="imap_host" name="imap_host" value="{{ settings.imap_host or 'imap.gmail.com' }}" placeholder="imap.gmail.com">
+            </div>
+            <div class="form-group" style="max-width:120px;">
+                <label for="imap_port">Port</label>
+                <input type="number" id="imap_port" name="imap_port" value="{{ settings.imap_port or '993' }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="imap_user">Username</label>
+            <input type="text" id="imap_user" name="imap_user" value="{{ settings.imap_user or '' }}" placeholder="your.email@gmail.com">
+        </div>
+        <div class="form-group">
+            <label for="imap_pass">Password / App Password</label>
+            <input type="password" id="imap_pass" name="imap_pass" value="{{ settings.imap_pass or '' }}" placeholder="Enter your password">
+            <div class="help">For Gmail, use an <a href="https://support.google.com/accounts/answer/185833" target="_blank">App Password</a>.</div>
+        </div>
+        <div class="btn-group" style="margin-top:12px;">
+            <button type="button" id="test-imap-btn" class="btn btn-outline btn-sm">Test Connection</button>
+            <span id="imap-test-result" style="display:inline-flex;align-items:center;gap:6px;margin-left:12px;font-size:13px;color:var(--text-2);"></span>
+        </div>
+    </div>
+
+    {# ── AI Provider ─────────────────────────────────────────── #}
+    <div class="section-title">AI Provider</div>
+
+    <div class="form-group">
+        <label for="provider">Classifier</label>
+        <select id="provider" name="provider">
+            <option value="rule_based"    {{ 'selected' if settings.provider == 'rule_based'    else '' }}>Rule-based (no API key needed)</option>
+            <option value="openai"        {{ 'selected' if settings.provider == 'openai'        else '' }}>OpenAI API</option>
+            <option value="openai_compat" {{ 'selected' if settings.provider == 'openai_compat' else '' }}>OpenAI-Compatible (OpenRouter, Groq, etc.)</option>
+            <option value="local"         {{ 'selected' if settings.provider == 'local'         else '' }}>Local LLM (Ollama)</option>
+        </select>
+    </div>
+
+    {# OpenAI #}
+    <div id="openai-fields" class="{{ 'hidden' if settings.provider != 'openai' else '' }}">
+        <div class="form-group">
+            <label for="openai_api_key">API Key</label>
+            <input type="password" id="openai_api_key" name="openai_api_key" value="{{ settings.openai_api_key or '' }}" placeholder="sk-...">
+        </div>
+        <div class="form-group">
+            <label for="openai_model">Model</label>
+            <input type="text" id="openai_model" name="openai_model" value="{{ settings.openai_model or 'gpt-4o-mini' }}" placeholder="gpt-4o-mini">
+        </div>
+    </div>
+
+    {# OpenAI-Compatible #}
+    <div id="openai_compat-fields" class="{{ 'hidden' if settings.provider != 'openai_compat' else '' }}">
+        <div class="form-group">
+            <label for="openai_compat_base_url">Base URL</label>
+            <input type="text" id="openai_compat_base_url" name="openai_compat_base_url" value="{{ settings.openai_compat_base_url or 'https://openrouter.ai/api/v1' }}" placeholder="https://openrouter.ai/api/v1">
+            <div class="help">e.g. https://openrouter.ai/api/v1, https://api.groq.com/openai/v1</div>
+        </div>
+        <div class="form-group">
+            <label for="openai_compat_api_key">API Key</label>
+            <input type="password" id="openai_compat_api_key" name="openai_compat_api_key" value="{{ settings.openai_compat_api_key or '' }}" placeholder="sk-...">
+        </div>
+        <div class="form-group">
+            <label for="openai_compat_model">Model</label>
+            <input type="text" id="openai_compat_model" name="openai_compat_model" value="{{ settings.openai_compat_model or 'anthropic/claude-3-haiku' }}" placeholder="anthropic/claude-3-haiku">
+            <div class="help">Model name as required by your provider.</div>
+        </div>
+    </div>
+
+    {# Local / Ollama #}
+    <div id="local-fields" class="{{ 'hidden' if settings.provider != 'local' else '' }}">
+        <div class="form-group">
+            <label for="ollama_base_url">Ollama Base URL</label>
+            <input type="text" id="ollama_base_url" name="ollama_base_url" value="{{ settings.ollama_base_url or 'http://host.docker.internal:11434' }}" placeholder="http://localhost:11434">
+            <div class="help">For Docker, use http://host.docker.internal:11434. Locally, use http://localhost:11434</div>
+        </div>
+        <div class="form-group">
+            <label for="ollama_model">Model</label>
+            <input type="text" id="ollama_model" name="ollama_model" value="{{ settings.ollama_model or 'llama3.2' }}" placeholder="llama3.2">
+        </div>
+    </div>
+
+    {# ── Poll Interval ───────────────────────────────────────── #}
+    <div class="section-title">Polling</div>
+
+    <div class="form-group" style="max-width:220px;">
+        <label for="poll_interval">Poll Interval (seconds)</label>
+        <input type="number" id="poll_interval" name="poll_interval" value="{{ settings.poll_interval or '120' }}" min="10" max="3600">
+        <div class="help">How often to check for new emails. Default: 120s.</div>
+    </div>
+
+    {# ── Actions ─────────────────────────────────────────────── #}
+    <div class="btn-group mt-24">
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+        <button type="button" class="btn btn-outline" onclick="window.location.href='/'">Back to Dashboard</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ── Toggle conditional field visibility ─────────────────────
+    const emailSource = document.getElementById('email_source');
+    const provider    = document.getElementById('provider');
+
+    const fieldGroups = {
+        'mock':          document.getElementById('mock-editor'),
+        'imap':          document.getElementById('imap-fields'),
+        'openai':        document.getElementById('openai-fields'),
+        'openai_compat': document.getElementById('openai_compat-fields'),
+        'local':         document.getElementById('local-fields'),
+    };
+
+    function updateVisibility() {
+        const src = emailSource.value;
+        for (const [key, el] of Object.entries(fieldGroups)) {
+            if (key === 'mock' || key === 'imap') {
+                el.classList.toggle('hidden', src !== key);
+            }
+        }
+
+        const prov = provider.value;
+        for (const [key, el] of Object.entries(fieldGroups)) {
+            if (key === 'openai' || key === 'openai_compat' || key === 'local') {
+                el.classList.toggle('hidden', prov !== key);
+            }
+        }
+    }
+
+    emailSource.addEventListener('change', updateVisibility);
+    provider.addEventListener('change', updateVisibility);
+
+    // ── Delete mock email ───────────────────────────────────────
+    async function deleteMockEmail(emailId) {
+        if (!confirm('Delete email ' + emailId + ' from the mock dataset?')) return;
+
+        try {
+            const res = await fetch('/api/mock-data/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email_id: emailId }),
+            });
+
+            if (res.ok) {
+                showToast('Email deleted. Reloading page...', 'success');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const msg = await res.json();
+                showToast(msg.error || 'Failed to delete email', 'error');
+            }
+        } catch (err) {
+            showToast('Network error', 'error');
+            console.error(err);
+        }
+    }
+
+    // ── Save mock data ──────────────────────────────────────────
+    document.getElementById('save-mock-btn').addEventListener('click', async () => {
+        const textarea = document.getElementById('mock_data');
+        const raw = textarea.value;
+
+        try {
+            JSON.parse(raw);
+        } catch (err) {
+            showToast('Invalid JSON. Please fix the syntax and try again.', 'error');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/mock-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: raw }),
+            });
+
+            if (res.ok) {
+                showToast('Mock data saved and reloaded successfully!', 'success');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const msg = await res.json();
+                showToast(msg.error || 'Failed to save mock data', 'error');
+            }
+        } catch (err) {
+            showToast('Network error', 'error');
+            console.error(err);
+        }
+    });
+
+    // ── Test IMAP connection ─────────────────────────────────────
+    document.getElementById('test-imap-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('test-imap-btn');
+        const resultEl = document.getElementById('imap-test-result');
+
+        // Grab current field values
+        const host = document.getElementById('imap_host').value.trim();
+        const port = document.getElementById('imap_port').value.trim();
+        const user = document.getElementById('imap_user').value.trim();
+        const pass = document.getElementById('imap_pass').value;
+
+        if (!host || !port || !user || !pass) {
+            resultEl.innerHTML = '<span style="color:var(--danger);">&#10007; Fill in all IMAP fields first</span>';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Testing...';
+        resultEl.innerHTML = '<span style="color:var(--text-2);">Connecting…</span>';
+
+        try {
+            const res = await fetch('/api/imap/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imap_host: host, imap_port: port, imap_user: user, imap_pass: pass }),
+            });
+
+            const data = await res.json();
+            if (res.ok && data.status === 'ok') {
+                resultEl.innerHTML = '<span style="color:var(--success);">&#10003; Connection successful</span>';
+            } else {
+                resultEl.innerHTML = '<span style="color:var(--danger);">&#10007; ' + (data.error || 'Connection failed') + '</span>';
+            }
+        } catch (err) {
+            resultEl.innerHTML = '<span style="color:var(--danger);">&#10007; Network error</span>';
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Test Connection';
+        }
+    });
+
+    // ── Save settings ───────────────────────────────────────────
+    document.getElementById('settings-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const data = {};
+
+        const fields = form.querySelectorAll('input, select');
+        for (const field of fields) {
+            if (field.name && field.name !== 'mock_data') {
+                data[field.name] = field.value;
+            }
+        }
+
+        // ── Validate IMAP fields when IMAP source selected ──────
+        if (data.email_source === 'imap') {
+            const imapFields = ['imap_host', 'imap_port', 'imap_user', 'imap_pass'];
+            const missing = imapFields.filter(f => !data[f] || !data[f].toString().trim());
+            if (missing.length > 0) {
+                showToast('Please fill in all IMAP fields before saving.', 'error');
+                return;
+            }
+        }
+
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+
+            if (res.ok) {
+                showToast('Settings saved successfully!', 'success');
+            } else {
+                showToast('Failed to save settings', 'error');
+            }
+        } catch (err) {
+            showToast('Network error', 'error');
+            console.error(err);
+        }
+    });
+</script>
+{% endblock %}
